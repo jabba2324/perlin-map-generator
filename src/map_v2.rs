@@ -13,13 +13,29 @@ struct Color {
     a: u8,
 }
 
-const BLUE: Color = Color { r: 120, g: 150, b: 220, a: 255 };
-const YELLOW: Color = Color { r: 160, g: 130, b: 90, a: 255 };
-const GREEN: Color = Color { r: 40, g: 80, b: 50, a: 255 };
+// ALPINE
+// const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
+// const SHORE_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 };
+// const LAND_COLOR: Color = Color { r: 40, g: 80, b: 50, a: 255 };
 
-const BLUE_THRESHOLD: f64 = -0.5;
-const YELLOW_THRESHOLD: f64 = -0.4;
-const GREEN_THRESHOLD: f64 = -0.38;
+// DESERT
+const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
+const SHORE_COLOR: Color = Color { r: 130, g: 100, b: 60, a: 255 };
+const LAND_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 }; 
+
+// TUNDRA
+// const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
+// const SHORE_COLOR: Color = Color { r: 140, g: 145, b: 150, a: 255 };
+// const LAND_COLOR: Color = Color { r: 248, g: 248, b: 255, a: 255 };
+
+// ALIEN
+// const SEA_COLOR: Color = Color { r: 200, g: 50, b: 30, a: 255 };
+// const SHORE_COLOR: Color = Color { r: 65, g: 70, b: 75, a: 255 };
+// const LAND_COLOR: Color = Color { r: 25, g: 15, b: 35, a: 255 };
+
+const SEA_THRESHOLD: f64 = -0.5;
+const SHORE_THRESHOLD: f64 = -0.4;
+const LAND_THRESHOLD: f64 = -0.38;
 
 #[derive(Debug, Clone)]
 pub enum TileType {
@@ -41,7 +57,7 @@ impl Tile {
         for pixel in image_data.chunks(4) {
             let [r, g, b, _] = [pixel[0], pixel[1], pixel[2], pixel[3]];
             
-            if r >= BLUE.r && g >= BLUE.g && b >= BLUE.b {
+            if r >= SEA_COLOR.r && g >= SEA_COLOR.g && b >= SEA_COLOR.b {
                 sea_count += 1;
             } else {
                 land_count += 1;
@@ -74,22 +90,22 @@ pub fn generate_map_image() -> Image {
         for x in 0..pixel_width {
             let noise = perlin.get([x as f64 * 0.0008, y as f64 * 0.0008]);
             let color = match noise {
-                n if n < BLUE_THRESHOLD => [BLUE.r, BLUE.g, BLUE.b, BLUE.a],
-                n if n < YELLOW_THRESHOLD => {
-                    let t = (n - BLUE_THRESHOLD) / (YELLOW_THRESHOLD - BLUE_THRESHOLD);
-                    let r = (BLUE.r as f64 * (1.0 - t) + YELLOW.r as f64 * t) as u8;
-                    let g = (BLUE.g as f64 * (1.0 - t) + YELLOW.g as f64 * t) as u8;
-                    let b = (BLUE.b as f64 * (1.0 - t) + YELLOW.b as f64 * t) as u8;
+                n if n < SEA_THRESHOLD => [SEA_COLOR.r, SEA_COLOR.g, SEA_COLOR.b, SEA_COLOR.a],
+                n if n < SHORE_THRESHOLD => {
+                    let t = (n - SEA_THRESHOLD) / (SHORE_THRESHOLD - SEA_THRESHOLD);
+                    let r = (SEA_COLOR.r as f64 * (1.0 - t) + SHORE_COLOR.r as f64 * t) as u8;
+                    let g = (SEA_COLOR.g as f64 * (1.0 - t) + SHORE_COLOR.g as f64 * t) as u8;
+                    let b = (SEA_COLOR.b as f64 * (1.0 - t) + SHORE_COLOR.b as f64 * t) as u8;
                     [r, g, b, 255]
                 },
-                n if n < GREEN_THRESHOLD => {
-                    let t = (n - YELLOW_THRESHOLD) / (GREEN_THRESHOLD - YELLOW_THRESHOLD);
-                    let r = (YELLOW.r as f64 * (1.0 - t) + GREEN.r as f64 * t) as u8;
-                    let g = (YELLOW.g as f64 * (1.0 - t) + GREEN.g as f64 * t) as u8;
-                    let b = (YELLOW.b as f64 * (1.0 - t) + GREEN.b as f64 * t) as u8;
-                    [r.max(GREEN.r), g.max(GREEN.g), b.max(GREEN.b), 255]
+                n if n < LAND_THRESHOLD => {
+                    let t = (n - SHORE_THRESHOLD) / (LAND_THRESHOLD - SHORE_THRESHOLD);
+                    let r = (SHORE_COLOR.r as f64 * (1.0 - t) + LAND_COLOR.r as f64 * t) as u8;
+                    let g = (SHORE_COLOR.g as f64 * (1.0 - t) + LAND_COLOR.g as f64 * t) as u8;
+                    let b = (SHORE_COLOR.b as f64 * (1.0 - t) + LAND_COLOR.b as f64 * t) as u8;
+                    [r, g, b, 255]
                 },
-                _ => [GREEN.r, GREEN.g, GREEN.b, GREEN.a],
+                _ => [LAND_COLOR.r, LAND_COLOR.g, LAND_COLOR.b, LAND_COLOR.a],
             };
             image_data.extend_from_slice(&color);
         }
