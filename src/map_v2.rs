@@ -14,14 +14,14 @@ struct Color {
 }
 
 // ALPINE
-// const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
-// const SHORE_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 };
-// const LAND_COLOR: Color = Color { r: 40, g: 80, b: 50, a: 255 };
+const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
+const SHORE_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 };
+const LAND_COLOR: Color = Color { r: 40, g: 80, b: 50, a: 255 };
 
 // DESERT
-const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
-const SHORE_COLOR: Color = Color { r: 130, g: 100, b: 60, a: 255 };
-const LAND_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 }; 
+// const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
+// const SHORE_COLOR: Color = Color { r: 130, g: 100, b: 60, a: 255 };
+// const LAND_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 }; 
 
 // TUNDRA
 // const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
@@ -41,6 +41,7 @@ const LAND_THRESHOLD: f64 = -0.38;
 pub enum TileType {
     Sea,
     Land,
+    Shore,
 }
 
 #[derive(Debug, Clone)]
@@ -52,25 +53,26 @@ pub struct Tile {
 impl Tile {
     fn determine_type(image_data: &[u8]) -> TileType {
         let mut sea_count = 0;
+        let mut shore_count = 0;
         let mut land_count = 0;
         
         for pixel in image_data.chunks(4) {
             let [r, g, b, _] = [pixel[0], pixel[1], pixel[2], pixel[3]];
             
-            if r >= SEA_COLOR.r && g >= SEA_COLOR.g && b >= SEA_COLOR.b {
-                sea_count += 1;
-            } else {
-                land_count += 1;
+            match (r, g, b) {
+                (sr, sg, sb) if sr == SEA_COLOR.r && sg == SEA_COLOR.g && sb == SEA_COLOR.b => sea_count += 1,
+                (lr, lg, lb) if lr >= LAND_COLOR.r && lg >= LAND_COLOR.g && lb == LAND_COLOR.b => land_count += 1,
+                _ => shore_count += 1,
             }
         }
         
         let total_pixels = (TILE_SIZE * TILE_SIZE) as u32;
         let threshold = total_pixels / 2;
         
-        if sea_count >= threshold {
-            TileType::Sea
-        } else {
-            TileType::Land
+        match (sea_count >= threshold, shore_count >= threshold) {
+            (true, _) => TileType::Sea,
+            (false, true) => TileType::Shore,
+            (false, false) => TileType::Land,
         }
     }
     
@@ -78,6 +80,21 @@ impl Tile {
         let tile_type = Self::determine_type(&image_data);
         Self { image_data, tile_type }
     }
+}
+
+pub fn generate_tile_map() -> Vec<Vec<f64>> {
+    let perlin = Perlin::new(rand::thread_rng().gen());
+    let mut tile_map = Vec::new();
+    
+    for y in 0..HEIGHT {
+        let mut row = Vec::new();
+        for x in 0..WIDTH {
+            let noise = perlin.get([x as f64 * 0.1, y as f64 * 0.1]);
+            row.push(noise);
+        }
+        tile_map.push(row);
+    }
+    tile_map
 }
 
 pub fn generate_map_image() -> Image {
@@ -126,11 +143,14 @@ pub fn generate_map_image() -> Image {
 pub fn render_map(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
+    asset_server: Res<AssetServer>,
 ) {
     let full_image = generate_map_image();
     let image_data = &full_image.data;
+    let mut map_tiles = Vec::new();
     
     for tile_y in 0..HEIGHT {
+        let mut row = Vec::new();
         for tile_x in 0..WIDTH {
             let mut tile_data = Vec::new();
             
@@ -183,6 +203,50 @@ pub fn render_map(
                 )),
                 ..default()
             });
+            
+            row.push(tile.tile_type.clone());
+        }
+        map_tiles.push(row);
+    }
+    
+    // Generate nature tiles
+    let nature_map = generate_tile_map();
+    
+    for tile_y in 0..HEIGHT {
+        for tile_x in 0..WIDTH {
+            let noise_value = nature_map[tile_y as usize][tile_x as usize];
+            
+            if matches!(map_tiles[tile_y as usize][tile_x as usize], TileType::Land) {
+                let nature_handle = match noise_value {
+                    n if n > 0.1 && n < 0.11 => Some(asset_server.load("rock.png")),
+                    n if n > 0.8 => {
+                        let mut rng = rand::thread_rng();
+                        let tree_file = match rng.gen_range(1..=3) {
+                            1 => "tree1.png",
+                            2 => "tree2.png",
+                            _ => "tree3.png",
+                        };
+                        Some(asset_server.load(tree_file))
+                    },
+                    _ => None,
+                };
+                
+                if let Some(handle) = nature_handle {
+                    commands.spawn(SpriteBundle {
+                        texture: handle,
+                        transform: Transform::from_translation(Vec3::new(
+                            tile_x as f32 * TILE_SIZE as f32 + TILE_SIZE as f32 / 2.0,
+                            (HEIGHT - 1 - tile_y) as f32 * TILE_SIZE as f32 + TILE_SIZE as f32 / 2.0,
+                            1.0,
+                        )),
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
+                            ..default()
+                        },
+                        ..default()
+                    });
+                }
+            }
         }
     }
 }
