@@ -13,10 +13,12 @@ struct Color {
     a: u8,
 }
 
+const ASSET_PATH: &str = "alien/"; 
+
 // ALPINE
-const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
-const SHORE_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 };
-const LAND_COLOR: Color = Color { r: 40, g: 80, b: 50, a: 255 };
+// const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
+// const SHORE_COLOR: Color = Color { r: 160, g: 130, b: 90, a: 255 };
+// const LAND_COLOR: Color = Color { r: 40, g: 80, b: 50, a: 255 };
 
 // DESERT
 // const SEA_COLOR: Color = Color { r: 120, g: 150, b: 220, a: 255 };
@@ -29,9 +31,9 @@ const LAND_COLOR: Color = Color { r: 40, g: 80, b: 50, a: 255 };
 // const LAND_COLOR: Color = Color { r: 248, g: 248, b: 255, a: 255 };
 
 // ALIEN
-// const SEA_COLOR: Color = Color { r: 200, g: 50, b: 30, a: 255 };
-// const SHORE_COLOR: Color = Color { r: 65, g: 70, b: 75, a: 255 };
-// const LAND_COLOR: Color = Color { r: 25, g: 15, b: 35, a: 255 };
+const SEA_COLOR: Color = Color { r: 200, g: 50, b: 30, a: 255 };
+const SHORE_COLOR: Color = Color { r: 65, g: 70, b: 75, a: 255 };
+const LAND_COLOR: Color = Color { r: 25, g: 15, b: 35, a: 255 };
 
 const SEA_THRESHOLD: f64 = -0.5;
 const SHORE_THRESHOLD: f64 = -0.4;
@@ -218,7 +220,15 @@ pub fn render_map(
             
             if matches!(map_tiles[tile_y as usize][tile_x as usize], TileType::Land) {
                 let nature_handle = match noise_value {
-                    n if n > 0.1 && n < 0.11 => Some(asset_server.load("rock.png")),
+                    n if n > 0.1 && n < 0.11 => {
+                        let mut rng = rand::thread_rng();
+                        let rock_file = match rng.gen_range(1..=3) {
+                            1 => "rock1.png",
+                            2 => "rock2.png",
+                            _ => "rock3.png",
+                        };
+                        Some(asset_server.load(&format!("{}{}", ASSET_PATH, rock_file)))
+                    },
                     n if n > 0.8 => {
                         let mut rng = rand::thread_rng();
                         let tree_file = match rng.gen_range(1..=3) {
@@ -226,7 +236,7 @@ pub fn render_map(
                             2 => "tree2.png",
                             _ => "tree3.png",
                         };
-                        Some(asset_server.load(tree_file))
+                        Some(asset_server.load(&format!("{}{}", ASSET_PATH, tree_file)))
                     },
                     _ => None,
                 };
