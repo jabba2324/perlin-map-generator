@@ -152,6 +152,7 @@ pub fn render_map(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                         ..default()
                     },
                     SeaTile,
+                    TilePosition { x: tile_x, y: tile_y },
                 )),
                 (false, true, false) => shore_entities.push((
                     SpriteBundle {
@@ -165,6 +166,7 @@ pub fn render_map(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                         ..default()
                     },
                     ShoreTile,
+                    TilePosition { x: tile_x, y: tile_y },
                 )),
                 (false, false, true) => land_entities.push((
                     SpriteBundle {
@@ -178,6 +180,7 @@ pub fn render_map(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                         ..default()
                     },
                     LandTile,
+                    TilePosition { x: tile_x, y: tile_y },
                 )),
                 _ => land_entities.push((
                     SpriteBundle {
@@ -191,6 +194,7 @@ pub fn render_map(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                         ..default()
                     },
                     LandTile,
+                    TilePosition { x: tile_x, y: tile_y },
                 )),
             };
         }
@@ -203,7 +207,7 @@ pub fn render_map(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 
 pub fn render_nature(
     mut commands: Commands,
-    land_tiles: Query<&Transform, With<LandTile>>,
+    land_tiles: Query<(&Transform, &TilePosition), With<LandTile>>,
     asset_server: Res<AssetServer>,
     map: Res<Map>,
 ) {
@@ -222,42 +226,37 @@ pub fn render_nature(
 
     println!("Found {} land tiles", land_tiles.iter().count());
 
-    for transform in land_tiles.iter() {
-        let tile_x = (transform.translation.x / TILE_SIZE as f32) as usize;
-        let tile_y = (HEIGHT as f32 - 1.0 - transform.translation.y / TILE_SIZE as f32) as usize;
+    for (transform, tile_pos) in land_tiles.iter() {
+        let noise_value = nature_map[tile_pos.y as usize][tile_pos.x as usize];
 
-        if tile_x < WIDTH as usize && tile_y < HEIGHT as usize {
-            let noise_value = nature_map[tile_y][tile_x];
+        let nature_handle = match noise_value {
+            n if n > 0.1 && n < 0.11 => Some(match rng.gen_range(1..=3) {
+                1 => rock1.clone(),
+                2 => rock2.clone(),
+                _ => rock3.clone(),
+            }),
+            n if n > 0.8 => Some(match rng.gen_range(1..=3) {
+                1 => tree1.clone(),
+                2 => tree2.clone(),
+                _ => tree3.clone(),
+            }),
+            _ => None,
+        };
 
-            let nature_handle = match noise_value {
-                n if n > 0.1 && n < 0.11 => Some(match rng.gen_range(1..=3) {
-                    1 => rock1.clone(),
-                    2 => rock2.clone(),
-                    _ => rock3.clone(),
-                }),
-                n if n > 0.8 => Some(match rng.gen_range(1..=3) {
-                    1 => tree1.clone(),
-                    2 => tree2.clone(),
-                    _ => tree3.clone(),
-                }),
-                _ => None,
-            };
-
-            if let Some(handle) = nature_handle {
-                entities.push(SpriteBundle {
-                    texture: handle,
-                    transform: Transform::from_translation(Vec3::new(
-                        transform.translation.x,
-                        transform.translation.y,
-                        1.0,
-                    )),
-                    sprite: Sprite {
-                        custom_size: Some(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
-                        ..default()
-                    },
+        if let Some(handle) = nature_handle {
+            entities.push((SpriteBundle {
+                texture: handle,
+                transform: Transform::from_translation(Vec3::new(
+                    transform.translation.x,
+                    transform.translation.y,
+                    1.0,
+                )),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(TILE_SIZE as f32, TILE_SIZE as f32)),
                     ..default()
-                });
-            }
+                },
+                ..default()
+            }, Nature, TilePosition { x: tile_pos.x, y: tile_pos.y }));
         }
     }
     commands.spawn_batch(entities);

@@ -1,31 +1,38 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
 
+use crate::tank::Vehicle;
+
 const TILE_SIZE: f32 = 32.0;
 const WIDTH: f32 = 100.0;
 const HEIGHT: f32 = 100.0;
 const BORDER: f32 = 10.0;
 
-pub fn setup_camera(
-    mut commands: Commands,
-    windows: Query<&Window>,
-) {
-    let window = windows.single();
-    let window_center_width = window.width() / 2.0;
-    let window_center_height = window.height() / 2.0;
-    
+pub fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
-        transform: Transform::from_translation(Vec3::new(
-            window_center_width - TILE_SIZE,
-            window_center_height - TILE_SIZE,
-            0.0,
-        )),
+        transform: Transform::from_translation(Vec3::new(1600.0, 1600.0, 0.0)),
         ..default()
     });
 }
 
+pub fn move_camera_to_tank(
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Vehicle>)>,
+    tanks: Query<&Transform, With<Vehicle>>,
+    mut camera_focused: Local<bool>,
+) {
+    if *camera_focused {
+        return;
+    }
+    
+    if let Some(tank_transform) = tanks.iter().next() {
+        let mut camera_transform = camera_query.single_mut();
+        camera_transform.translation = tank_transform.translation;
+        *camera_focused = true;
+    } 
+}
+
 pub fn camera_controls(
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Vehicle>)>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
     windows: Query<&Window>,
