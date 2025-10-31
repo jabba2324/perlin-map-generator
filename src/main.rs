@@ -1,16 +1,14 @@
 use bevy::prelude::*;
 
-mod tools {
-    pub mod terrain_generator;
-}
-
-mod map_v2;
+mod map_renderer;
+mod map_components;
+mod biomes;
 mod camera;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, (map_v2::render_map, camera::setup_camera).chain())
-        .add_systems(Update, camera::camera_controls)
+        .add_systems(Startup, (map_renderer::render_map, camera::setup_camera))
+        .add_systems(Update, (map_renderer::render_nature.run_if(run_once()), camera::camera_controls))
         .run();
 }

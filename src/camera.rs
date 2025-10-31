@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
-use crate::map_v2;
 
 const TILE_SIZE: f32 = 32.0;
 const WIDTH: f32 = 100.0;
