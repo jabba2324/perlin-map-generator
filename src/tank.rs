@@ -5,10 +5,19 @@ use rand::Rng;
 const TILE_SIZE: u32 = 32;
 
 #[derive(Component)]
-pub struct Vehicle {
+pub struct Unit {
     pub health: i32,
-    pub speed: i32
+    pub speed: f32
 }
+
+#[derive(Component)]
+pub struct Selectable;
+
+#[derive(Component)]
+pub struct Selected;
+
+#[derive(Component)]
+pub struct HealthBar;
 
 pub fn spawn_tank(
     mut commands: Commands,
@@ -42,7 +51,9 @@ pub fn spawn_tank(
                 },
                 ..default()
             },
-            Vehicle{health: 100, speed: 10}
+            Unit{health: 100, speed: 80.0},
+            Selectable,
         ));
     }
 }
+

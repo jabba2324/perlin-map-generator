@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
 
-use crate::tank::Vehicle;
+use crate::tank::Unit;
 
 const TILE_SIZE: f32 = 32.0;
 const WIDTH: f32 = 100.0;
@@ -16,8 +16,8 @@ pub fn setup_camera(mut commands: Commands) {
 }
 
 pub fn move_camera_to_tank(
-    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Vehicle>)>,
-    tanks: Query<&Transform, With<Vehicle>>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Unit>)>,
+    tanks: Query<&Transform, With<Unit>>,
     mut camera_focused: Local<bool>,
 ) {
     if *camera_focused {
@@ -32,7 +32,7 @@ pub fn move_camera_to_tank(
 }
 
 pub fn camera_controls(
-    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Vehicle>)>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Unit>)>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
     windows: Query<&Window>,
